@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from geometry_msgs.msg import Twist
-import ast
+import json  # Fixed: Standard JSON parsing instead of ast
 
 
 class TurtlesimControllerNode(Node):
@@ -26,20 +26,15 @@ class TurtlesimControllerNode(Node):
         raw = msg.data.strip()
         self.get_logger().info(f"Received command raw: {raw}")
 
-        # Try JSON first
-        import json
+        # Fixed: Enforce strict JSON deserialization
         try:
             cmd = json.loads(raw)
-        except Exception:
-            # Fallback: use ast.literal_eval for Python dict-like strings
-            try:
-                cmd = ast.literal_eval(raw)
-            except Exception:
-                self.get_logger().warning(f"Invalid command (parse error): {raw}")
-                return
+        except json.JSONDecodeError as e:
+            self.get_logger().error(f"Malformed JSON payload dropped: {raw}. Error: {e}")
+            return
 
         if not isinstance(cmd, dict):
-            self.get_logger().warning(f"Invalid command (not a dict): {cmd}")
+            self.get_logger().warning(f"Invalid command format (expected dict): {cmd}")
             return
 
         twist = Twist()
@@ -58,11 +53,11 @@ class TurtlesimControllerNode(Node):
                 twist.linear.x = 0.0
                 twist.angular.z = 0.0
             elif action == "up":
-                self.get_logger().info("Up command (could map to color change).")
+                self.get_logger().info("Up command recognized.")
             elif action == "down":
-                self.get_logger().info("Down command.")
+                self.get_logger().info("Down command recognized.")
         else:
-            self.get_logger().info(f"Received command: {cmd}")
+            self.get_logger().info(f"Non-motion command passed to actuator: {cmd}")
 
         self.cmd_vel_pub.publish(twist)
 
