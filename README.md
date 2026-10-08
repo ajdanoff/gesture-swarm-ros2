@@ -56,3 +56,11 @@ ros2 run gesture_swarm_ros2 turtlesim_controller_node
 ```
 
 Show gestures (A, B, F, L, R, U, D, etc.) to control the turtle.
+
+## Command parsing
+
+- Uses a rolling window of recent symbols.
+- RANSAC-style temporal consensus to infer robust motion commands (`A`, `B`, `F`, `L`, `R`, `U`, `D`).
+- Emergency stop override for `A`.
+- Basic structural parsing for task commands (`T ...`).
+- Commands are published as JSON on `/swarm/command`.
